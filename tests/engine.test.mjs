@@ -102,6 +102,13 @@ test('persistent jobs, retry de-duplication, cancellation and timeout', async ()
   const result = await waitJob(id);
   assert.equal(result.exit_code, 0);
   assert.match(result.output, /job-output/);
+  if (process.env.ProgramData || process.env.PROGRAMDATA) {
+    const envId = randomUUID();
+    check(await call('start_job', { operation_id: envId, command: 'Write-Output $env:ProgramData', timeout_seconds: 10 }));
+    const inherited = await waitJob(envId);
+    assert.equal(inherited.exit_code, 0);
+    assert.equal(inherited.output.trim(), process.env.ProgramData || process.env.PROGRAMDATA);
+  }
   const slow = randomUUID();
   check(await call('start_job', { operation_id: slow, command: 'Start-Sleep -Seconds 30', timeout_seconds: 1 }));
   assert.equal((await waitJob(slow)).status, 'timed_out');

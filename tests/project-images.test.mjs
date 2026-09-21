@@ -86,8 +86,8 @@ test('project image pipeline: decoding, boundaries, resizing, private payload an
     await execute(c.python, ['-c', "import sys,json;from PIL import Image;Image.new('RGB',(6000,5000),'blue').save(json.load(sys.stdin)['path'])"], JSON.stringify({ path: expanded }));
     const pixels = await client.callTool({ name: 'view_project_images', arguments: { paths: [expanded], question: 'Read' } });
     assert.equal(pixels.isError, false); assert.equal(pixels.structuredContent.images[0].original_width, 6000);
-    const remote = await client.callTool({ name: 'view_project_images', arguments: { ...args, project_id: 'remote' } });
-    assert.equal(remote.isError, true); assert.match(remote.content[0].text, /LOCAL_ONLY/);
+    const remote = await client.callTool({ name: 'view_project_images', arguments: { ...args, project_id: 'unknown' } });
+    assert.equal(remote.isError, true); assert.match(remote.content[0].text, /UNAUTHORIZED/);
   } finally {
     await client.close(); await server.close();
     assert.ok(path.resolve(folder).startsWith(path.resolve(os.tmpdir()) + path.sep + 'x14-image-tests-'));

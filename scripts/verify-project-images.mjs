@@ -18,7 +18,7 @@ try {
   }
   const resource = (await client.readResource({ uri: imageViewerUri })).contents[0];
   assert.equal(resource.mimeType, 'text/html;profile=mcp-app');
-  const result = await client.callTool({ name: 'view_project_images', arguments: { ...(process.argv[3] === '--local' ? {} : { project_id: 'bridge' }), paths: [process.argv[2] || 'tmp/image-viewer-acceptance/web-experiment.png'], question: '分析截图中展示的实验状态与流程。' } });
+  const result = await client.callTool({ name: 'view_project_images', arguments: { ...(process.argv[3] === '--local' ? {} : { project_id: process.argv[3] === '--ssh' ? (process.argv[4] || 'volcengine-cszy') : 'bridge' }), paths: [process.argv[2] || 'tmp/image-viewer-acceptance/web-experiment.png'], question: '分析截图中展示的实验状态与流程。' } });
   assert.equal(result.isError, false, JSON.stringify(result.content));
   for (const [i, info] of result.structuredContent.images.entries()) {
     const bytes = Buffer.from(result._meta['x14/images'].base64[i], 'base64');
@@ -28,7 +28,7 @@ try {
   const args = { run_id: result.structuredContent.run_id, token: result._meta['x14/images'].token };
   const claims = await Promise.all([1,2].map(() => client.callTool({ name: 'claim_image_delivery', arguments: args })));
   assert.equal(claims.filter(r => r.structuredContent.granted).length, 1);
-  const report = { at: new Date().toISOString(), scope: 'Running service image bytes/resource/atomic claim; webpage upload and CSP still require acceptance', tool_count: tools.length, resource: imageViewerUri, images: result.structuredContent.images, claim: 'one granted / one denied' };
+  const report = { at: new Date().toISOString(), scope: 'Running service image bytes/resource/atomic claim; webpage upload and CSP still require acceptance', tool_count: tools.length, resource: imageViewerUri, project_id: result.structuredContent.project_id, source_target: result.structuredContent.source_target, images: result.structuredContent.images, claim: 'one granted / one denied' };
   await mkdir(path.join(c.state, 'image-deliveries'), { recursive: true });
   await writeFile(path.join(c.state, 'image-deliveries', 'verification.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));

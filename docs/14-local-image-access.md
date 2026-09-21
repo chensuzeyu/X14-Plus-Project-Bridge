@@ -2,6 +2,8 @@
 
 本页取代第 12 篇的项目范围及大小限制说明。
 
+SSH 项目图片已接入同一工具，范围与验证记录见 [SSH 图片读取](15-ssh-image-access.md)。本页的磁盘发现规则仅针对本机。
+
 - `view_project_images` 保留原名称兼容现有调用。绝对路径可位于任意本地磁盘，不需要 project_id；相对路径仍需指定本地项目。
 - `discover_local_images` 不需项目参数。省略 path 返回本地磁盘和用户主目录；指定绝对目录返回子目录和 PNG/JPEG 路径。可按文件名 contains 搜索，recursive 默认 false。
 - 搜索最多遍历 20000 项或 8 秒。scan_truncated 表示未查完，应缩小目录；has_more/next_offset 仅对本次扫描到的图片分页。目录变化时不保证分页快照。无权限项和链接会跳过并计数。子目录列表最多 200 项。

@@ -12,7 +12,7 @@ export async function config() {
   return c;
 }
 
-export function execute(command, args, input, timeout = 45000) {
+export function execute(command, args, input, timeout = 45000, maxOutput = 5_000_000) {
   return new Promise((resolve, reject) => {
     const env = { ...process.env, PYTHONIOENCODING: 'utf-8' };
     delete env.CONTROL_PLANE_API_KEY;
@@ -26,7 +26,7 @@ export function execute(command, args, input, timeout = 45000) {
     child.on('error', e => finish(e));
     child.stdout.on('data', b => {
       output += b.toString('utf8');
-      if (output.length > 5_000_000) { child.kill(); finish(new Error('RESULT_TOO_LARGE')); }
+      if (output.length > maxOutput) { child.kill(); finish(new Error('RESULT_TOO_LARGE')); }
     });
     child.stderr.on('data', b => { error = (error + b.toString('utf8')).slice(-6000); });
     child.on('close', code => finish(code === 0 ? null : new Error(`TARGET_UNREACHABLE (${code}): ${error}`), output));
@@ -57,6 +57,11 @@ export async function invoke(action, args, suppliedConfig) {
   const started = Date.now();
   let response;
   try {
+    if (p.target === 'ssh' && action === 'prepare_images') {
+      const { prepareRemoteImages } = await import('./remote-images.mjs');
+      response = { ok: true, result: await prepareRemoteImages(p, args, c) };
+      return { machine_id: c.machine_id, project_id: p.id, target: p.host, ...response };
+    }
     const text = p.target === 'ssh'
       ? await execute(c.ssh || 'ssh', ['-T', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=12', '-o', 'ClearAllForwardings=yes', p.host,
           `${quotePosix(p.python || 'python3')} ${quotePosix(p.engine)}`], payload)

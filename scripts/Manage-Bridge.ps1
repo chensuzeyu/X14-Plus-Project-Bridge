@@ -3,6 +3,11 @@ param(
     [string]$Action = 'Status'
 )
 $ErrorActionPreference = 'Stop'
+# Windows OpenSSH exits 255 without diagnostics when ProgramData is absent.
+# Recover it when this launcher is called from a filtered job environment.
+if (-not $env:ProgramData) {
+    $env:ProgramData = Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders' -Name 'Common AppData'
+}
 if ($PSVersionTable.PSEdition -eq 'Desktop') {
     $env:PSModulePath = (Join-Path $PSHOME 'Modules') + ';' + (Join-Path $env:ProgramFiles 'WindowsPowerShell\Modules')
 }

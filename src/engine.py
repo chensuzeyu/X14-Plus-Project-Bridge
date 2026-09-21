@@ -447,7 +447,7 @@ def worker(folder):
     started = time.time()
     status = {'status': 'running', 'started_at': started, 'heartbeat': started, 'worker_pid': os.getpid()}
     # Do not inherit the tunnel API key or unrelated parent-process tokens.
-    allowed = {'PATH', 'SYSTEMROOT', 'WINDIR', 'COMSPEC', 'PATHEXT', 'TEMP', 'TMP', 'TMPDIR', 'HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'LANG', 'LC_ALL', 'USER', 'USERNAME'}
+    allowed = {'PATH', 'SYSTEMROOT', 'WINDIR', 'COMSPEC', 'PATHEXT', 'TEMP', 'TMP', 'TMPDIR', 'HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'PROGRAMDATA', 'ALLUSERSPROFILE', 'LANG', 'LC_ALL', 'USER', 'USERNAME'}
     env = {k: v for k, v in os.environ.items() if k.upper() in allowed}
     env.update(PYTHONIOENCODING='utf-8', PYTHONUNBUFFERED='1')
     if spec.get('proxy'):

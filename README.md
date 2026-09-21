@@ -37,7 +37,7 @@ flowchart TD
 
 ## 文档导航
 
-多模态扩展不使用 GitHub 中转。正式管线为本地图片 → 卡片 uploadFile → imageIds → 自动续答 → 继续原任务。当前支持本机跨项目 PNG/JPEG 图片查找与读取，详见 [当前图片能力与限制](docs/14-local-image-access.md)。网页截图识读和任务后续文件编辑已有成功反馈，见 [任务验收记录](docs/13-task-vision-acceptance.md)；跨项目读取已通过服务验证，跨项目网页视觉、CSP 开启、SSH 图片及其他文件类型仍待验证或扩展。历史设计见 [第一版工具](docs/12-本地项目图片工具.md) 和 [实验记录](docs/11-自动读图实验记录.md)。
+多模态扩展不使用 GitHub 中转。正式管线为本机/SSH 图片 → 本机预处理 → 卡片 uploadFile → imageIds → 自动续答 → 继续原任务。当前支持本机跨项目 PNG/JPEG 图片查找与读取，详见 [当前图片能力与限制](docs/14-local-image-access.md)。网页截图识读和任务后续文件编辑已有成功反馈，见 [任务验收记录](docs/13-task-vision-acceptance.md)；跨项目读取已通过服务验证，SSH 图片已接入同一工具并通过实际服务验证，见 [SSH 图片读取](docs/15-ssh-image-access.md)；跨项目及 SSH 网页视觉、CSP 开启和其他文件类型仍待验证或扩展。历史设计见 [第一版工具](docs/12-本地项目图片工具.md) 和 [实验记录](docs/11-自动读图实验记录.md)。
 
 优先阅读 [项目全貌与运行维护](docs/06-项目全貌与运行维护.md) 和 [交接记录与 Git 维护](docs/07-交接记录与Git维护.md)。最新网页任务 `web_remote_proxy_recheck_20260921_02` 已返回 exit 0、HTTP_STATUS=200，三段链路恢复；新版自有 SSH 转发冷启动及自动接管仍需单独验证。
 
