@@ -29,7 +29,7 @@ SSH 通过标准库读取原图 → 本机 Pillow 校验、方向处理及必要
 - `/Knowin/sim/chensuzeyu/tmp/RIT1.png`：572954 字节，1454×864，PNG；原始及交付 SHA-256 均为 `05902f8efa78a0f45194d652de991615c3ce307ae28bc4203be6ee210d40c348`。未缩放、未重新压缩。
 - 独立远程任务 `ssh-image-source-hash-0921` 计算的源文件哈希与交付内容一致。
 - 服务此前的 SSH 255 错误来自缺失 ProgramData：同一进程环境补回后，版本查询及 SSH 连接均恢复。任务环境过滤现在保留 PROGRAMDATA/ALLUSERSPROFILE，启动器在缺失时从系统注册表恢复 ProgramData。
-- 服务检查不等于网页实际看图成功。SSH 图片的网页视觉、CSP 开启仍待用户验收。
+- 服务检查不等于网页实际看图成功。后续用户已人工确认该 SSH 图片在网页实际识读正常；CSP 开启仍待验收。混合来源任务见 [混合来源任务验收](16-mixed-evidence-task.md)。
 
 ## 网页验收
 

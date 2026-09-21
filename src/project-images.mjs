@@ -4,7 +4,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import { config, invoke } from './bridge.mjs';
 
-export const imageViewerUri = 'ui://x14/project-images-v5.html';
+export const imageViewerUri = 'ui://x14/project-images-v6.html';
 const identity = z.string().uuid();
 export function registerProjectImages(server, suppliedConfig) {
   const getConfig = async () => suppliedConfig || await config();
@@ -18,7 +18,7 @@ export function registerProjectImages(server, suppliedConfig) {
   });
   server.registerTool('view_project_images', {
     title: '查看图片',
-    description: 'View 1–4 PNG/JPEG images using ChatGPT vision. Local absolute paths need no project_id; local relative paths require project_id. SSH images require an SSH project_id and a relative or absolute path inside that project. Find local images with discover_local_images; find SSH images with list_files. Source limits: 32 MiB and 40 million pixels per image; delivery optimized to 2560px / 768 KiB. Pass original task context and remaining authorized work. Initially say preparing; after automatic follow-up inspect images and resume the task. Do not repeat pending requests. Network drives are not supported. SSH files are read over the configured connection and prepared locally.',
+    description: 'View 1–4 PNG/JPEG images using ChatGPT vision. Local absolute paths need no project_id; local relative paths require project_id. SSH images require an SSH project_id and a relative or absolute path inside that project. Find local images with discover_local_images; find SSH images with list_files. Source limits: 32 MiB and 40 million pixels per image; delivery optimized to 2560px / 768 KiB. Resolve document-relative references against the source document directory and retain its host/project. Never substitute a same-named file on another host. Use separate batches per host/project. Pass original goal, established findings, remaining evidence, authorized output paths and verification requirements. Initially say preparing; after automatic follow-up inspect images and resume the task. Do not repeat pending requests. Network drives are not supported. SSH files are read over the configured connection and prepared locally.',
     inputSchema: { project_id: z.string().max(100).optional(), paths: z.array(z.string().min(1).max(1000)).min(1).max(4), question: z.string().min(1).max(6000) },
     outputSchema: { run_id: identity.optional(), status: z.enum(['waiting_for_widget', 'error']), error: z.string().optional(), project_id: z.string().optional(), source_target: z.string().optional(), question: z.string().optional(), images: z.array(z.object({ index: z.number(), path: z.string(), mime_type: z.string(), source_bytes: z.number(), bytes: z.number(), source_sha256: z.string(), sha256: z.string(), original_width: z.number(), original_height: z.number(), width: z.number(), height: z.number(), resized: z.boolean(), orientation_corrected: z.boolean(), recompressed: z.boolean() })).optional() },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
