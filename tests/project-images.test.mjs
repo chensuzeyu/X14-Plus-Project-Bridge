@@ -49,6 +49,15 @@ test('project image pipeline: decoding, boundaries, resizing, private payload an
     const claimArgs = { run_id: result.structuredContent.run_id, token: result._meta['x14/images'].token };
     const claims = await Promise.all(Array.from({ length: 8 }, () => client.callTool({ name: 'claim_image_delivery', arguments: claimArgs })));
     assert.equal(claims.filter(r => r.structuredContent.granted).length, 1);
+    const event = await client.callTool({ name: 'claim_image_delivery', arguments: { ...claimArgs, event: 'references_set', uploaded_count: 3 } });
+    assert.equal(event.structuredContent.granted, false);
+    assert.equal(event.structuredContent.reason, 'event_recorded');
+    const events = (await readFile(path.join(c.state, 'image-deliveries', claimArgs.run_id + '.events.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.equal(events.at(-1).uploaded_count, 3);
+    assert.equal(events.at(-1).expected_images, 3);
+    assert.ok(!JSON.stringify(events).includes(claimArgs.token));
+    const deniedEvent = await client.callTool({ name: 'claim_image_delivery', arguments: { ...claimArgs, token: '00000000-0000-4000-8000-000000000000', event: 'followup_accepted', uploaded_count: 3 } });
+    assert.equal(deniedEvent.structuredContent.reason, 'invalid_or_expired_delivery');
     for (const [paths, expected] of [[['missing.png'], 'NOT_FOUND'], [['bad.txt'], 'UNSUPPORTED_IMAGE'], [['bad.png'], 'INVALID_IMAGE'], [['../secret.png'], 'PATH_OUT_OF_SCOPE'], [['escape/secret.png'], 'PATH_OUT_OF_SCOPE'], [['.env/a.png'], 'PATH_OUT_OF_SCOPE'], [['中文 图.png','中文 图.png'], 'INVALID_INPUT']]) {
       const error = await client.callTool({ name: 'view_project_images', arguments: { ...args, paths } });
       assert.equal(error.isError, true); assert.match(error.content[0].text, new RegExp(expected));
@@ -97,7 +106,7 @@ test('project image pipeline: decoding, boundaries, resizing, private payload an
 
 const script = await readFile(new URL('../src/ui/project-images.js', import.meta.url), 'utf8');
 const bytes = Buffer.from('test bytes'), sha256 = createHash('sha256').update(bytes).digest('hex');
-const payload = { structuredContent: { run_id: 'test', status: 'waiting_for_widget', project_id: 'test', question: '对比图片', images: [1,2].map(index => ({ index, path: `img${index}.png`, bytes: bytes.length, sha256, mime_type: 'image/png', width: 10, height: 10 })) }, _meta: { 'x14/images': { token: 'token', base64: [bytes.toString('base64'), bytes.toString('base64')] } } };
+const payload = { structuredContent: { run_id: 'test', status: 'waiting_for_widget', project_id: 'test', question: '对比图片', images: [1,2].map(index => ({ index, project_id: index === 1 ? 'local' : 'remote', source_target: index === 1 ? 'local-host' : 'remote-host', path: `img${index}.png`, bytes: bytes.length, sha256, mime_type: 'image/png', width: 10, height: 10 })) }, _meta: { 'x14/images': { token: 'token', base64: [bytes.toString('base64'), bytes.toString('base64')] } } };
 function host({ granted = true, uploadError = false } = {}) {
   const elements = {}, listeners = {}, states = [], uploads = [], requests = [], timers = new Set(), storage = new Map();
   const window = { addEventListener: (key, fn) => { (listeners[key] ||= []).push(fn); }, openai: {
@@ -108,7 +117,7 @@ function host({ granted = true, uploadError = false } = {}) {
   window.parent = { postMessage: message => {
     if (message.id === undefined) return;
     requests.push(message);
-    queueMicrotask(() => emit({ jsonrpc: '2.0', id: message.id, result: message.method === 'tools/call' ? { structuredContent: { granted, reason: 'already_claimed' } } : {} }));
+    queueMicrotask(() => emit({ jsonrpc: '2.0', id: message.id, result: message.method === 'tools/call' ? { structuredContent: { granted: message.params?.arguments?.event ? false : granted, reason: message.params?.arguments?.event ? 'event_recorded' : 'already_claimed' } } : {} }));
   } };
   vm.runInNewContext(script, { window, document: { getElementById: id => elements[id] ||= { appendChild() {} }, createElement: () => ({}) }, File, Uint8Array, crypto: webcrypto, atob,
     sessionStorage: { getItem: key => storage.get(key), setItem: (key, val) => storage.set(key, val) },
@@ -127,6 +136,11 @@ test('project widget sends ordered images and original question once; duplicate 
     const messages = h.requests.filter(r => r.method === 'ui/message'); assert.equal(messages.length, 1);
     assert.match(messages[0].params.content[0].text, /对比图片/);
     assert.match(messages[0].params.content[0].text, /img1.png/);
+    assert.match(messages[0].params.content[0].text, /local-host/);
+    assert.match(messages[0].params.content[0].text, /remote-host/);
+    const telemetry = h.requests.filter(r => r.method === 'tools/call' && r.params.arguments.event).map(r => r.params.arguments);
+    assert.deepEqual(telemetry.map(v => v.event), ['upload_started', 'upload_complete', 'references_set', 'followup_requested', 'followup_accepted']);
+    assert.equal(telemetry.find(v => v.event === 'references_set').uploaded_count, 2);
     h.send(); await h.settle(); assert.equal(h.uploads.length, 2); assert.equal(h.report().followup_attempts, 1);
   } finally { h.dispose(); }
 });
