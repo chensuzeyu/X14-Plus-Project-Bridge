@@ -50,7 +50,8 @@ export async function invoke(action, args, suppliedConfig) {
     project_id: p.id, name: p.name, target: p.target, root: p.root,
     write: p.write, execute: p.execute, proxy_available: Boolean(p.proxy)
   })) };
-  const p = c.projects.find(v => v.id === args.project_id);
+  const localImageAction = action === 'discover_local_images' || (action === 'prepare_images' && !args.project_id);
+  const p = localImageAction ? { id: 'local-images', target: 'local', root: root, write: false, execute: false } : c.projects.find(v => v.id === args.project_id);
   if (!p) throw new Error('UNAUTHORIZED: unknown project_id. Call list_projects first.');
   const payload = JSON.stringify({ action, args, project: p, state: p.target === 'ssh' ? p.state : c.state });
   const started = Date.now();

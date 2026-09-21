@@ -512,7 +512,14 @@ def main():
                    'apply_changes': engine.changes, 'restore_change': engine.restore, 'git_inspect': engine.git,
                    'project_context': engine.context, 'start_job': engine.start_job, 'get_job': engine.get_job,
                    'cancel_job': engine.cancel_job}
-        result = actions[request['action']]()
+        if request['action'] == 'discover_local_images':
+            from local_images import discover_images
+            result = discover_images(engine)
+        elif request['action'] == 'prepare_images':
+            from project_images import prepare_images
+            result = prepare_images(engine)
+        else:
+            result = actions[request['action']]()
         print(json.dumps({'ok': True, 'result': result}, ensure_ascii=False))
     except Exception as e:
         print(json.dumps({'ok': False, 'error': {'code': getattr(e, 'code', 'IO_ERROR'), 'message': str(e)}}, ensure_ascii=False))

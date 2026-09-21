@@ -15,7 +15,10 @@ test('real MCP stdio discovery and read tools', async () => {
   try {
     await client.connect(transport);
     const tools = await client.listTools();
-    assert.equal(tools.tools.length, 12);
+    assert.equal(tools.tools.length, 15);
+    assert.ok(!tools.tools.some(t => t.name === 'vision_probe' || t.name === 'vision_widget_probe'));
+    assert.ok(tools.tools.some(t => t.name === 'view_project_images'));
+    assert.deepEqual(tools.tools.find(t => t.name === 'claim_image_delivery')._meta.ui.visibility, ['app']);
     const projects = await client.callTool({ name: 'list_projects', arguments: {} });
     assert.ok(projects.structuredContent.projects.some(p => p.project_id === 'bridge'));
     const read = await client.callTool({ name: 'read_files', arguments: { project_id: 'bridge', files: [{ path: 'package.json' }] } });
@@ -49,7 +52,7 @@ test('HTTP rejects unauthenticated and browser-origin requests; authenticated MC
     const client = new Client({ name: 'http-test', version: '1.0.0' });
     try {
       await client.connect(new StreamableHTTPClientTransport(new URL(url + '/mcp'), { requestInit: { headers } }));
-      assert.equal((await client.listTools()).tools.length, 12);
+      assert.equal((await client.listTools()).tools.length, 15);
       assert.equal((await client.callTool({ name: 'bridge_status', arguments: {} })).isError, false);
     } finally { await client.close(); }
   } finally {

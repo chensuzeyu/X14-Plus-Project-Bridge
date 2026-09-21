@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { invoke } from './bridge.mjs';
+import { registerVisionProbe } from './vision-probe.mjs';
+import { registerVisionWidgetProbe } from './vision-widget-probe.mjs';
+import { registerProjectImages } from './project-images.mjs';
 
 const project = { project_id: z.string().max(100) };
 const relative = z.string().max(1000).default('.');
@@ -12,6 +15,7 @@ const changes = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('delete'), path: z.string(), expected_sha256: z.string().regex(/^[a-f0-9]{64}$/) })
 ]);
 const tools = [
+  ['discover_local_images', 'Find local PNG/JPEG files anywhere on this computer. Omit path to list local drives and home. Supply absolute directory path to list subdirectories and images; optionally search recursively by filename. Results are bounded: when scan_truncated, narrow the directory. This does not inspect image content; pass returned absolute paths to view_project_images. No project_id required. Read-only; no network drives.', { path: z.string().max(1000).optional(), recursive: z.boolean().default(false), contains: z.string().max(200).default(''), offset: z.number().int().min(0).default(0), limit: z.number().int().min(1).max(200).default(100) }, true],
   ['bridge_status', 'Identify this computer and bridge capabilities. Does not prove SSH or cloud connectivity.', {}, true],
   ['list_projects', 'List configured local and SSH projects and their capabilities. Use returned project_id for all subsequent operations.', {}, true],
   ['project_context', 'Start a project task here: bounded directory overview, README, applicable ancestor AGENTS.md, manifests and Git status. Not the whole project.', { ...project, path: relative }, true],
@@ -27,6 +31,11 @@ const tools = [
 ];
 
 export function registerTools(server, suppliedConfig) {
+  if (suppliedConfig?.enable_vision_experiments === true) {
+    registerVisionProbe(server, suppliedConfig);
+    registerVisionWidgetProbe(server, suppliedConfig);
+  }
+  registerProjectImages(server, suppliedConfig);
   for (const [name, description, inputSchema, readOnly] of tools) {
     server.registerTool(name, { description, inputSchema,
       annotations: { readOnlyHint: readOnly, destructiveHint: !readOnly, idempotentHint: readOnly || ['apply_changes', 'start_job', 'restore_change', 'cancel_job'].includes(name), openWorldHint: name === 'start_job' }
